@@ -4,23 +4,17 @@ from google import genai
 def main(context):
     api_key = os.getenv("GEMINI_API_KEY")
 
-    if not api_key:
-        return context.res.json({"error": "GEMINI_API_KEY not found"}, 500)
+    client = genai.Client(api_key=api_key)
 
-    try:
-        client = genai.Client(api_key=api_key)
+    # URL se prompt lo
+    prompt = context.req.query.get("prompt", "Hello Gemini!")
 
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents="Say only: Hello Yash"
-        )
+    response = client.models.generate_content(
+        model="gemini-3.6-flash",
+        contents=prompt
+    )
 
-        return context.res.json({
-            "text": response.text
-        })
-
-    except Exception as e:
-        context.error(str(e))  # Log Appwrite me jayega
-        return context.res.json({
-            "error": str(e)
-        }, 500)
+    return context.res.json({
+        "prompt": prompt,
+        "response": response.text
+    })
