@@ -11,7 +11,7 @@ def main(context):
         client = genai.Client(api_key=api_key)
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="model=gemini-3.6-flash",
             contents="Say only: Hello Yash"
         )
 
