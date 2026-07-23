@@ -1,4 +1,5 @@
 import os
+import json
 from google import genai
 
 MODELS = [
@@ -15,14 +16,11 @@ CORS_HEADERS = {
     "Access-Control-Allow-Headers": "*"
 }
 
+
 def main(context):
 
-    # Handle CORS preflight request
     if context.req.method == "OPTIONS":
-        return context.res.empty(
-            204,
-            CORS_HEADERS
-        )
+        return context.res.empty(204, CORS_HEADERS)
 
     api_key = os.getenv("GEMINI_API_KEY")
 
@@ -38,7 +36,23 @@ def main(context):
 
     client = genai.Client(api_key=api_key)
 
-    prompt = context.req.query.get("prompt", "Hello Gemini!")
+    # GET request support
+    if context.req.method == "GET":
+
+        prompt = context.req.query.get("prompt", "Hello Gemini!")
+
+        history = [
+            {
+                "role": "user",
+                "text": prompt
+            }
+        ]
+
+    else:
+
+        body = json.loads(context.req.body)
+
+        history = body.get("history", [])
 
     last_error = None
 
@@ -46,17 +60,20 @@ def main(context):
 
         try:
 
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt
-            )
+            chat = client.chats.create(model=model)
+
+            reply = None
+
+            for msg in history:
+
+                if msg["role"] == "user":
+                    reply = chat.send_message(msg["text"])
 
             return context.res.json(
                 {
                     "success": True,
-                    "model": model,
-                    "prompt": prompt,
-                    "response": response.text
+                    "response": reply.text,
+                    "model": model
                 },
                 200,
                 CORS_HEADERS
@@ -69,8 +86,7 @@ def main(context):
     return context.res.json(
         {
             "success": False,
-            "error": "All models failed",
-            "details": last_error
+            "error": last_error
         },
         500,
         CORS_HEADERS
