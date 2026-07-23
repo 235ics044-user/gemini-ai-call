@@ -20,8 +20,8 @@ CORS_HEADERS = {
 def main(context):
 
     if context.req.method == "OPTIONS":
-        return context.res.empty(204, CORS_HEADERS)
-
+      return context.res.json({})
+    
     api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
